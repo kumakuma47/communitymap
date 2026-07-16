@@ -132,7 +132,6 @@ h2{font-size:12px;font-weight:700;margin-bottom:8px;color:#333}
 
 <button id="editBtn" onclick="openEditPrompt()" style="position:fixed;top:10px;right:12px;font-size:10px;padding:2px 8px;z-index:100;background:#e8f0fe;color:#1a5fd4;border-color:#9db8f5">🔒 編集</button>
 <button id="lockBtn" onclick="lockApp()" style="display:none;position:fixed;top:10px;right:12px;font-size:10px;padding:2px 8px;z-index:100">🔒 ロック</button>
-<button id="resetBtn" onclick="clearData()" style="display:none;position:fixed;top:10px;right:80px;font-size:10px;padding:2px 8px;z-index:100;color:#c0392b;border-color:#e07070">↺ リセット</button>
 
 <div style="display:flex;flex-direction:column;gap:10px" id="mainApp">
   <div class="main-grid" style="display:grid;grid-template-columns:480px 1fr;gap:10px;align-items:stretch">
@@ -452,23 +451,11 @@ function setEditMode(editable){
   document.getElementById("addDivRolePanel").style.display=editable?"block":"none";
   document.getElementById("editBtn").style.display=editable?"none":"block";
   document.getElementById("lockBtn").style.display=editable?"block":"none";
-  const rb=document.getElementById("resetBtn");if(rb)rb.style.display=editable?"block":"none";
   const dth=document.getElementById("deleteTh");
   if(dth)dth.style.display=editable?"":"none";
 }
 
-let members=[
-  {id:1,name:"山田 太郎",div:"au",role:["PM"],coms:[{cid:1,gid:1},{cid:4,gid:7}]},
-  {id:2,name:"鈴木 花子",div:"docomo",role:["TR"],coms:[{cid:1,gid:1},{cid:3,gid:5}]},
-  {id:3,name:"田中 一郎",div:"ws",role:["広報"],coms:[{cid:2,gid:3},{cid:5,gid:9}]},
-  {id:4,name:"佐藤 美咲",div:"au",role:["IN"],coms:[{cid:3,gid:5},{cid:6,gid:11}]},
-  {id:5,name:"中村 健二",div:"docomo",role:["NV"],coms:[{cid:4,gid:7}]},
-  {id:6,name:"伊藤 奈々",div:"ws",role:["PM"],coms:[{cid:3,gid:5},{cid:6,gid:11}]},
-  {id:7,name:"渡辺 翔",div:"au",role:["PS"],coms:[{cid:4,gid:7},{cid:5,gid:9}]},
-  {id:8,name:"小林 純子",div:"docomo",role:["TR"],coms:[{cid:7,gid:13}]},
-  {id:9,name:"高橋 洋介",div:"ws",role:["CP"],coms:[{cid:1,gid:2},{cid:2,gid:3}]},
-  {id:10,name:"松本 彩",div:"au",role:["広報"],coms:[{cid:5,gid:9},{cid:6,gid:11}]},
-];
+let members=[];
 let communities=[
   {id:1,name:"AI開発チーム",hex:"#FF6B6B",groups:[{id:1,name:"Aチーム"},{id:2,name:"Bチーム"}]},
   {id:2,name:"S1",hex:"#5B5FEF",groups:[{id:3,name:""}]},
@@ -1155,11 +1142,6 @@ function loadData(){
     if(d.DIV_BORDER) Object.assign(DIV_BORDER,d.DIV_BORDER);
     if(d.ROLE_COLORS) Object.assign(ROLE_COLORS,d.ROLE_COLORS);
   } catch(e){ console.warn('load failed', e); }
-}
-function clearData(){
-  if(!confirm('保存データをリセットしてサンプルデータに戻しますか？')) return;
-  localStorage.removeItem('cmData');
-  location.reload();
 }
 function render(){sanitizeRoles();saveData();renderRoster();renderMap();renderVennPanel();initRosterDragDrop();renderDivRoleLists();}
 
