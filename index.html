@@ -50,11 +50,12 @@ h2{font-size:12px;font-weight:700;margin-bottom:8px;color:#333}
 @media (max-width: 860px){
   #editBtn,#lockBtn{top:6px;right:6px;font-size:11px;padding:4px 9px}
   svg#vennSvg{max-height:none !important}
-  .ex-tbl{font-size:8.5px;table-layout:fixed;min-width:310px}
-  .ex-tbl th,.ex-tbl td.cell{padding:1px 2px}
-  #rosterColgroup col:nth-child(1){width:58px}
-  #rosterColgroup col:nth-child(2){width:36px}
-  #rosterColgroup col:nth-child(3){width:32px}
+  .ex-tbl{font-size:8px;table-layout:fixed;min-width:256px}
+  .ex-tbl th,.ex-tbl td.cell{padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ex-tbl td.cell:last-of-type,.ex-tbl th:last-child{white-space:normal;overflow:visible}
+  #rosterColgroup col:nth-child(1){width:46px}
+  #rosterColgroup col:nth-child(2){width:26px}
+  #rosterColgroup col:nth-child(3){width:14px}
   #rosterColgroup col:nth-child(4){width:auto}
   #rosterTableWrap{overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
   .com-badge{font-size:7.5px;padding:0 3px}
@@ -69,6 +70,48 @@ h2{font-size:12px;font-weight:700;margin-bottom:8px;color:#333}
   body{font-size:12px}
 }
 </style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAKXs3S5oEEZwvdjev5wtFGX8lfYEyDjlg",
+    authDomain: "communitymap-f0adc.firebaseapp.com",
+    databaseURL: "https://communitymap-f0adc-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "communitymap-f0adc",
+    storageBucket: "communitymap-f0adc.firebasestorage.app",
+    messagingSenderId: "512556888342",
+    appId: "1:512556888342:web:cd9d4a093778ba2ca3a037"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._fbDb = db;
+  window._fbRef = ref;
+  window._fbSet = set;
+  window._fbOnValue = onValue;
+
+  // データをFirebaseから読み込み
+  onValue(ref(db, 'communitymap'), (snapshot) => {
+    const data = snapshot.val();
+    if(!data) return;
+    try {
+      if(data.members) members = data.members;
+      if(data.communities) communities = data.communities;
+      if(data.nM) nM = data.nM;
+      if(data.nC) nC = data.nC;
+      if(data.nG) nG = data.nG;
+      if(data.DIVISIONS) DIVISIONS = data.DIVISIONS;
+      if(data.ROLES) ROLES = data.ROLES;
+      if(data.DIV_COLORS) Object.assign(DIV_COLORS, data.DIV_COLORS);
+      if(data.DIV_TEXT) Object.assign(DIV_TEXT, data.DIV_TEXT);
+      if(data.DIV_BORDER) Object.assign(DIV_BORDER, data.DIV_BORDER);
+      if(data.ROLE_COLORS) Object.assign(ROLE_COLORS, data.ROLE_COLORS);
+      sanitizeRoles();
+      renderRoster(); renderMap(); renderVennPanel(); initRosterDragDrop(); renderDivRoleLists();
+      renderVennModeUI(); autoScale();
+    } catch(e){ console.warn('firebase load error', e); }
+  });
+</script>
 </head><body>
 
 <!-- 編集パスワードモーダル -->
@@ -87,6 +130,7 @@ h2{font-size:12px;font-weight:700;margin-bottom:8px;color:#333}
 
 <button id="editBtn" onclick="openEditPrompt()" style="position:fixed;top:10px;right:12px;font-size:10px;padding:2px 8px;z-index:100;background:#e8f0fe;color:#1a5fd4;border-color:#9db8f5">🔒 編集</button>
 <button id="lockBtn" onclick="lockApp()" style="display:none;position:fixed;top:10px;right:12px;font-size:10px;padding:2px 8px;z-index:100">🔒 ロック</button>
+<button id="resetBtn" onclick="clearData()" style="display:none;position:fixed;top:10px;right:80px;font-size:10px;padding:2px 8px;z-index:100;color:#c0392b;border-color:#e07070">↺ リセット</button>
 
 <div style="display:flex;flex-direction:column;gap:10px" id="mainApp">
   <div class="main-grid" style="display:grid;grid-template-columns:480px 1fr;gap:10px;align-items:stretch">
@@ -209,7 +253,7 @@ h2{font-size:12px;font-weight:700;margin-bottom:8px;color:#333}
 <script>
 const PASSWORD = "community47";
 let DIVISIONS = ["au","docomo","ws"];
-let ROLES = ["PM","TR","広報","CP","PS","IN","NV","人事"];
+let ROLES = ["MQ","SAM","TR","PM","広報","人事","CP","PS","IN","NV"];
 const ROLE_COLORS = {
   "PM":    {bg:"#FEF3C7",text:"#92400E",border:"#FCD34D"},
   "TR":    {bg:"#D1FAE5",text:"#065F46",border:"#6EE7B7"},
@@ -218,6 +262,9 @@ const ROLE_COLORS = {
   "PS":       {bg:"#FFEDD5",text:"#9A3412",border:"#FDBA74"},
   "IN":    {bg:"#DBEAFE",text:"#1E40AF",border:"#93C5FD"},
   "NV":    {bg:"#F0FDF4",text:"#14532D",border:"#86EFAC"},
+  "MQ":    {bg:"#FFF1F2",text:"#9F1239",border:"#FDA4AF"},
+  "SAM":   {bg:"#F0F9FF",text:"#0C4A6E",border:"#7DD3FC"},
+  "人事":  {bg:"#FFF7ED",text:"#9A3412",border:"#FDBA74"},
 };
 let DIV_COLORS = {au:"#FFF3E0",docomo:"#FFEBEE",ws:"#E0F7FA"};
 let DIV_TEXT   = {au:"#E65100",docomo:"#B71C1C",ws:"#006064"};
@@ -403,6 +450,7 @@ function setEditMode(editable){
   document.getElementById("addDivRolePanel").style.display=editable?"block":"none";
   document.getElementById("editBtn").style.display=editable?"none":"block";
   document.getElementById("lockBtn").style.display=editable?"block":"none";
+  const rb=document.getElementById("resetBtn");if(rb)rb.style.display=editable?"block":"none";
   const dth=document.getElementById("deleteTh");
   if(dth)dth.style.display=editable?"":"none";
 }
@@ -554,13 +602,36 @@ function renameMember(id,val){
 }
 function removeMember(id){if(isViewOnly)return;members=members.filter(m=>m.id!==id);render();}
 function updateMemberDiv(mid,val){if(isViewOnly)return;const m=members.find(x=>x.id===mid);if(m){m.div=val;render();}}
+const MQ_SAM_REQUIRED = ["PM","TR","広報","人事"];
 function toggleMemberRole(mid,role){
   if(isViewOnly)return;
   const m=members.find(x=>x.id===mid);
   if(!m)return;
   if(!Array.isArray(m.role))m.role=m.role?[m.role]:[];
-  if(m.role.includes(role))m.role=m.role.filter(r=>r!==role);
-  else m.role.push(role);
+
+  if(m.role.includes(role)){
+    // 外す
+    m.role=m.role.filter(r=>r!==role);
+    // 必須ロールを全部外したらSAMも外す
+    const stillNeeds=m.role.some(r=>MQ_SAM_REQUIRED.includes(r));
+    if(!stillNeeds) m.role=m.role.filter(r=>!EXCLUSIVE_GROUP.includes(r));
+  } else {
+    // 排他グループの場合は他を削除してから追加
+    if(EXCLUSIVE_GROUP.includes(role)){
+      m.role=m.role.filter(r=>!EXCLUSIVE_GROUP.includes(r));
+    }
+    m.role.push(role);
+    // 必須ロール追加 → MQもSAMもなければSAMを自動付与（IN/NVはSAMを妨げない→IN/NVを外してSAM付与）
+    if(MQ_SAM_REQUIRED.includes(role)){
+      const hasMq=m.role.includes("MQ");
+      const hasSam=m.role.includes("SAM");
+      if(!hasMq&&!hasSam){
+        // IN/NVがあれば外してSAMを付与
+        m.role=m.role.filter(r=>r!=="IN"&&r!=="NV");
+        m.role.push("SAM");
+      }
+    }
+  }
   render();
 }
 function toggleMemberCom(mid,cid){
@@ -753,7 +824,7 @@ function renderMap(){
         const divB=m.div?`<span class="chip-mini" style="background:${DIV_COLORS[m.div]||"#eee"};color:${DIV_TEXT[m.div]||"#555"};border-color:${DIV_BORDER[m.div]||"#ccc"}">${m.div}</span>`:"";
         const rc2List=Array.isArray(m.role)?m.role:(m.role?[m.role]:[]);
         const roleB=rc2List.map(r=>{const rc2=ROLE_COLORS[r]||{bg:"#F3E8FF",text:"#6B21A8",border:"#D8B4FE"};return`<span class="chip-mini" style="background:${rc2.bg};color:${rc2.text};border-color:${rc2.border}">${r}</span>`;}).join("");
-        return`<span class="name-chip" style="background:${hl(c.hex,.25)};border:1px solid ${hl(c.hex,.5)};color:#111">${m.name}${divB}${roleB}</span>`;
+        return`<span class="name-chip" style="background:${hl(c.hex,.25)};border:1px solid ${hl(c.hex,.5)};color:#111">${m.name}</span>`;
       }).join("");
       return`<div class="${hasG?"grp-block":""}">
         ${hasG?`<div class="flex" style="margin-bottom:2px;gap:3px">
@@ -929,10 +1000,29 @@ function renderVennSel(){
 }
 
 function toggleVennKey(key){
-  if(vennSel.includes(key))vennSel=vennSel.filter(x=>x!==key);
-  else if(vennSel.length<3)vennSel.push(key);
+  if(vennSel.includes(key)){
+    vennSel=vennSel.filter(x=>x!==key);
+  } else {
+    if(vennMode==="div"){
+      // 事業部：1つだけ
+      vennSel=[key];
+    } else if(vennMode==="role"){
+      const roleKey=key.startsWith("r_")?key.slice(2):null;
+      const isExcl=roleKey&&EXCLUSIVE_GROUP.includes(roleKey);
+      const hasExcl=vennSel.some(k=>{const r=k.startsWith("r_")?k.slice(2):null;return r&&EXCLUSIVE_GROUP.includes(r);});
+      if(isExcl||hasExcl){
+        // MQ/SAM/IN/NVが絡む場合は1つだけ選択
+        vennSel=[key];
+      } else {
+        if(vennSel.length<3)vennSel.push(key);
+      }
+    } else {
+      if(vennSel.length<3)vennSel.push(key);
+    }
+  }
   renderVennSel();renderVenn();
 }
+
 
 function renderVennPanel(){
   renderVennModeUI();
@@ -1018,13 +1108,64 @@ function renderVenn(){
   }
 }
 
-function render(){renderRoster();renderMap();renderVennPanel();initRosterDragDrop();renderDivRoleLists();}
+const EXCLUSIVE_GROUP = ["MQ","SAM","IN","NV"];
+function sanitizeRoles(){
+  members.forEach(m=>{
+    if(!Array.isArray(m.role))return;
+    // EXCLUSIVE_GROUP内は1つだけ（最後に選んだものを残す＝配列の後ろを優先）
+    const excl=m.role.filter(r=>EXCLUSIVE_GROUP.includes(r));
+    if(excl.length>1){
+      const keep=excl[excl.length-1];
+      m.role=m.role.filter(r=>!EXCLUSIVE_GROUP.includes(r)||r===keep);
+    }
+  });
+}
+
+function saveData(){
+  // localStorage にも保存（オフライン用バックアップ）
+  try{ localStorage.setItem('cmData', JSON.stringify({members,communities,nM,nC,nG,DIVISIONS,ROLES,DIV_COLORS,DIV_TEXT,DIV_BORDER,ROLE_COLORS})); }catch(e){}
+  // Firebase に保存
+  if(window._fbDb && window._fbSet && window._fbRef){
+    try{
+      window._fbSet(window._fbRef(window._fbDb,'communitymap'), {
+        members, communities, nM, nC, nG,
+        DIVISIONS, ROLES,
+        DIV_COLORS, DIV_TEXT, DIV_BORDER,
+        ROLE_COLORS
+      });
+    } catch(e){ console.warn('firebase save error', e); }
+  }
+}
+function loadData(){
+  try{
+    const raw=localStorage.getItem('cmData');
+    if(!raw) return;
+    const d=JSON.parse(raw);
+    if(d.members) members=d.members;
+    if(d.communities) communities=d.communities;
+    if(d.nM) nM=d.nM;
+    if(d.nC) nC=d.nC;
+    if(d.nG) nG=d.nG;
+    if(d.DIVISIONS) DIVISIONS=d.DIVISIONS;
+    if(d.ROLES) ROLES=d.ROLES;
+    if(d.DIV_COLORS) Object.assign(DIV_COLORS,d.DIV_COLORS);
+    if(d.DIV_TEXT) Object.assign(DIV_TEXT,d.DIV_TEXT);
+    if(d.DIV_BORDER) Object.assign(DIV_BORDER,d.DIV_BORDER);
+    if(d.ROLE_COLORS) Object.assign(ROLE_COLORS,d.ROLE_COLORS);
+  } catch(e){ console.warn('load failed', e); }
+}
+function clearData(){
+  if(!confirm('保存データをリセットしてサンプルデータに戻しますか？')) return;
+  localStorage.removeItem('cmData');
+  location.reload();
+}
+function render(){sanitizeRoles();saveData();renderRoster();renderMap();renderVennPanel();initRosterDragDrop();renderDivRoleLists();}
 
 function autoScale(){
   const app=document.getElementById("mainApp");
   const mainGrid=app?app.querySelector(".main-grid"):null;
   if(!app||!mainGrid)return;
-  const naturalW=930;
+  const naturalW=860;
   const screenW=window.innerWidth;
   if(screenW<naturalW){
     const scale=screenW/naturalW;
@@ -1033,7 +1174,7 @@ function autoScale(){
     app.style.width=naturalW+"px";
     document.body.style.height=(app.offsetHeight*scale+20)+"px";
     document.body.style.overflowX="auto";
-    mainGrid.style.gridTemplateColumns="400px 1fr";
+    mainGrid.style.gridTemplateColumns="380px 1fr";
   } else {
     app.style.transform="";
     app.style.transformOrigin="";
@@ -1045,6 +1186,7 @@ function autoScale(){
 }
 window.addEventListener("resize",autoScale);
 
+loadData();
 setEditMode(false);
 render();
 renderVennModeUI();
