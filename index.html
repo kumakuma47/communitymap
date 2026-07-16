@@ -93,19 +93,21 @@ h2{font-size:12px;font-weight:700;margin-bottom:8px;color:#333}
   // データをFirebaseから読み込み
   onValue(ref(db, 'communitymap'), (snapshot) => {
     const data = snapshot.val();
-    if(!data) return;
     try {
-      if(data.members) members = data.members;
-      if(data.communities) communities = data.communities;
-      if(data.nM) nM = data.nM;
-      if(data.nC) nC = data.nC;
-      if(data.nG) nG = data.nG;
-      if(data.DIVISIONS) DIVISIONS = data.DIVISIONS;
-      if(data.ROLES) ROLES = data.ROLES;
-      if(data.DIV_COLORS) Object.assign(DIV_COLORS, data.DIV_COLORS);
-      if(data.DIV_TEXT) Object.assign(DIV_TEXT, data.DIV_TEXT);
-      if(data.DIV_BORDER) Object.assign(DIV_BORDER, data.DIV_BORDER);
-      if(data.ROLE_COLORS) Object.assign(ROLE_COLORS, data.ROLE_COLORS);
+      if(data){
+        if(data.members) members = data.members;
+        if(data.communities) communities = data.communities;
+        if(data.nM) nM = data.nM;
+        if(data.nC) nC = data.nC;
+        if(data.nG) nG = data.nG;
+        if(data.DIVISIONS) DIVISIONS = data.DIVISIONS;
+        if(data.ROLES) ROLES = data.ROLES;
+        if(data.DIV_COLORS) Object.assign(DIV_COLORS, data.DIV_COLORS);
+        if(data.DIV_TEXT) Object.assign(DIV_TEXT, data.DIV_TEXT);
+        if(data.DIV_BORDER) Object.assign(DIV_BORDER, data.DIV_BORDER);
+        if(data.ROLE_COLORS) Object.assign(ROLE_COLORS, data.ROLE_COLORS);
+      }
+      _firebaseReady = true; // ロード完了
       sanitizeRoles();
       renderRoster(); renderMap(); renderVennPanel(); initRosterDragDrop(); renderDivRoleLists();
       renderVennModeUI(); autoScale();
@@ -1121,9 +1123,9 @@ function sanitizeRoles(){
   });
 }
 
+let _firebaseReady = false; // Firebaseからデータ取得完了フラグ
 function saveData(){
-  // localStorage にも保存（オフライン用バックアップ）
-  try{ localStorage.setItem('cmData', JSON.stringify({members,communities,nM,nC,nG,DIVISIONS,ROLES,DIV_COLORS,DIV_TEXT,DIV_BORDER,ROLE_COLORS})); }catch(e){}
+  if(!_firebaseReady) return; // Firebase未ロード時は保存しない
   // Firebase に保存
   if(window._fbDb && window._fbSet && window._fbRef){
     try{
